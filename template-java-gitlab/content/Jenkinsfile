@@ -1,0 +1,51 @@
+pipeline {
+    agent {
+        label '${{ values.jenkinsAgentLabel }}'
+    }
+
+    environment {
+        APP_NAME    = '${{ values.componentName }}'
+        MAVEN_OPTS  = '-Dmaven.repo.local=.m2/repository'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn ${{ values.mavenGoals }} -DskipTests'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests'
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Build di ${APP_NAME} completata con successo."
+        }
+        failure {
+            echo "Build di ${APP_NAME} fallita."
+        }
+    }
+}

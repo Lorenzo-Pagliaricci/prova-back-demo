@@ -1,0 +1,110 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: java-gitlab-jenkins-template
+  title: Java App - GitLab + Jenkins
+  description: Crea un repository GitLab con un'app Java (Maven) e un Jenkinsfile pronto all'uso
+  tags:
+    - java
+    - gitlab
+    - jenkins
+    - maven
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Informazioni progetto
+      required:
+        - componentName
+        - description
+        - language
+      properties:
+        componentName:
+          title: Nome componente
+          type: string
+          description: Nome del componente (usato anche come nome del repo GitLab)
+          ui:autofocus: true
+        description:
+          title: Descrizione
+          type: string
+          description: Breve descrizione del progetto
+        language:
+          title: Linguaggio di programmazione
+          type: string
+          description: Linguaggio principale del progetto
+          default: java
+          enum:
+            - java
+          enumNames:
+            - Java (Maven)
+
+    - title: Repository GitLab
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Posizione repository GitLab
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - gitlab.com
+        defaultBranch:
+          title: Branch di default
+          type: string
+          default: main
+
+    - title: Configurazione Jenkins
+      required:
+        - jenkinsAgentLabel
+      properties:
+        jenkinsAgentLabel:
+          title: Label agente Jenkins
+          type: string
+          default: jenkins-agent
+          description: Label del nodo/agente Jenkins da usare nella pipeline
+        mavenGoals:
+          title: Maven goals
+          type: string
+          default: clean package
+          description: Goals Maven da eseguire nella fase di build
+
+  steps:
+    - id: fetch-base
+      name: Genera struttura progetto
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          componentName: ${{ parameters.componentName }}
+          description: ${{ parameters.description }}
+          language: ${{ parameters.language }}
+          defaultBranch: ${{ parameters.defaultBranch | default("main") }}
+          jenkinsAgentLabel: ${{ parameters.jenkinsAgentLabel }}
+          mavenGoals: ${{ parameters.mavenGoals | default("clean package") }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Pubblica su GitLab
+      action: publish:gitlab
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: ${{ parameters.defaultBranch | default("main") }}
+        repoVisibility: private
+
+    - id: register
+      name: Registra nel catalogo
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository GitLab
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Apri nel catalogo
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
