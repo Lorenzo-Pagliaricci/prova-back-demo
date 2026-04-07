@@ -2,7 +2,7 @@
 
 Template remoto per Backstage che:
 
-1. genera file base (`fetch:template`)
+1. genera repository Spring Boot Hello World (`fetch:template`)
 2. risolve utente GitLab dal token (`gitlab:user:info`)
 3. crea la repo GitLab (`publish:gitlab`)
 4. crea/aggiorna la pipeline Jenkins (`jenkins:create-pipeline`)
@@ -15,6 +15,11 @@ Template remoto per Backstage che:
 - `skeleton/catalog-info.yaml`
 - `skeleton/main.jenkinsfile`
 - `skeleton/build.jenkinsfile`
+- `skeleton/pom.xml`
+- `skeleton/src/main/java/com/example/hello/HelloApplication.java`
+- `skeleton/src/main/java/com/example/hello/HelloController.java`
+- `skeleton/src/main/resources/application.properties`
+- `skeleton/src/test/java/com/example/hello/HelloApplicationTests.java`
 
 ## Come usarlo in Backstage
 
@@ -42,3 +47,13 @@ Per Jenkins:
 - in template devi valorizzare `jenkinsGitCredentialsId` (credential ID presente su Jenkins per clonare GitLab)
 
 Quindi il comportamento e' lo stesso del template locale in immagine, ma aggiornabile da repo senza rebuild dell'immagine.
+
+## Nota tecnica: template vs action
+
+Per popolare la nuova repo con codice applicativo (es. Spring Boot Hello World) basta modificare il `skeleton` del template.
+
+Le action custom backend non vanno modificate per questo caso, perche':
+
+- `fetch:template` copia i file nello workspace scaffolder
+- `publish:gitlab` fa commit/push sulla nuova repo
+- `jenkins:create-pipeline` crea o aggiorna solo il job Jenkins

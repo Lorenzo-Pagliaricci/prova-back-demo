@@ -1,26 +1,50 @@
 pipeline {
 
   agent any
+  options {
+    skipDefaultCheckout(true)
+  }
 
   parameters {
-    string(name: 'REPOSITORY', defaultValue: 'cdm-meteo-service', description: 'The name of the repository (No need to change it)')
-    string(name: 'PARENT_REPOSITORY', defaultValue: 'cdm-starter-parent', description: 'The name of the parent repository (No need to change it)')
-    string(name: 'BRANCH', defaultValue: 'develop', description: 'The Branch of the repository Gitlab')
+    string(name: 'REPOSITORY', defaultValue: '${{ values.name }}', description: 'Repository name on GitLab')
+    string(name: 'BRANCH', defaultValue: 'main', description: 'The branch of the repository on GitLab')
     string(name: 'NOTIFICATION_RECEIVERS', defaultValue: 'adbm_support_indra@indra.es', description: 'People to send notifications to')
-    choice(name: 'REPOSITORY_TAG', choices: ['dev', 'prod'], description: 'Repository to deploy artifact')
+    choice(name: 'REPOSITORY_TAG', choices: ['dev', 'prod'], description: 'Target environment')
+  }
+
+  environment {
+    GITLAB_BASE_URL = 'https://gitlab.com/Lorenzo-Pagliaricci'
+    GIT_CREDENTIALS_ID = 'accesso-prova-gitlab'
   }
 
   stages {
+    stage('Checkout Source Code') {
+      steps {
+        deleteDir()
+        git credentialsId: "${env.GIT_CREDENTIALS_ID}", url: "${env.GITLAB_BASE_URL}/${params.REPOSITORY}.git", branch: "${params.BRANCH}"
+      }
+    }
+
     stage('Build Source Code') {
       steps {
-        build job: "/cdm_pipeline/cdm_meteo_service/cdm_meteo_service_pipeline/build",
-          parameters: [
-            [$class: 'StringParameterValue', name: 'REPOSITORY', value: "${env.REPOSITORY}"],
-            [$class: 'StringParameterValue', name: 'PARENT_REPOSITORY', value: "${env.PARENT_REPOSITORY}"],
-            [$class: 'StringParameterValue', name: 'BRANCH', value: "${env.BRANCH}"],
-            [$class: 'StringParameterValue', name: 'NOTIFICATION_RECEIVERS', value: "${env.NOTIFICATION_RECEIVERS}"],
-            [$class: 'StringParameterValue', name: 'REPOSITORY_TAG', value: "${env.REPOSITORY_TAG}"]
-          ]
+        script {
+          if (fileExists('mvnw')) {
+            sh 'chmod +x mvnw'
+            sh './mvnw -B -DskipTests clean package'
+          } else if (fileExists('pom.xml')) {
+            def hasMaven = sh(script: 'command -v mvn >/dev/null 2>&1', returnStatus: true) == 0
+            if (hasMaven) {
+              sh 'mvn -B -DskipTests clean package'
+            } else {
+              echo 'pom.xml found but mvn is not available on this Jenkins agent, skipping Java build.'
+            }
+          } else if (fileExists('package.json')) {
+            sh 'npm ci'
+            sh 'npm run build --if-present'
+          } else {
+            echo 'No pom.xml or package.json found, skipping build.'
+          }
+        }
       }
     }
 
@@ -29,12 +53,7 @@ pipeline {
         expression { params.REPOSITORY_TAG != 'prod' }
       }
       steps {
-        build job: "/cdm_pipeline/cdm_meteo_service/cdm_meteo_service_pipeline/deploy",
-          parameters: [
-            [$class: 'StringParameterValue', name: 'REPOSITORY', value: "${env.REPOSITORY}"],
-            [$class: 'StringParameterValue', name: 'BRANCH', value: "${env.BRANCH}"],
-            [$class: 'StringParameterValue', name: 'NOTIFICATION_RECEIVERS', value: "${env.NOTIFICATION_RECEIVERS}"]
-          ]
+        echo "Deploy stage placeholder for repository ${params.REPOSITORY} on tag ${params.REPOSITORY_TAG}"
       }
     }
   }

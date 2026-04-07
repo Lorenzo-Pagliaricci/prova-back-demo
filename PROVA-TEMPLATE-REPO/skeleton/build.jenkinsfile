@@ -7,10 +7,10 @@ pipeline {
   }
 
   parameters {
-    string(name: 'REPOSITORY', defaultValue: 'cdm-meteo-service', description: 'The name of the repository (No need to change it)')
-    string(name: 'PARENT_REPOSITORY', defaultValue: 'cdm-starter-parent', description: 'The name of the parent repository (No need to change it)')
+    string(name: 'REPOSITORY', defaultValue: '${{ values.name }}', description: 'The name of the repository (No need to change it)')
+    string(name: 'PARENT_REPOSITORY', defaultValue: '', description: 'Optional parent repository')
     string(name: 'NOTIFICATION_RECEIVERS', defaultValue: 'adbm_support_indra@indra.es', description: "List of receivers' emails")
-    string(name: 'BRANCH', defaultValue: 'develop', description: "Branch to checkout")
+    string(name: 'BRANCH', defaultValue: 'main', description: "Branch to checkout")
     choice(name: 'REPOSITORY_TAG', choices: ['dev', 'prod'], description: 'Repository to deploy artifact')
   }
 
@@ -29,7 +29,7 @@ pipeline {
       }
       steps {
         dir(params.PARENT_REPOSITORY) {
-          git credentialsId: 'preprod-sa', url: "https://gitlab.devops.adr.it/adr/cdm/business-continuity/web-application/${params.PARENT_REPOSITORY}.git", branch: "${params.BRANCH}"
+          git credentialsId: 'accesso-prova-gitlab', url: "https://gitlab.com/Lorenzo-Pagliaricci/${params.PARENT_REPOSITORY}.git", branch: "${params.BRANCH}"
         }
       }
     }
@@ -37,7 +37,7 @@ pipeline {
     stage('Source Code Checkout') {
       steps {
         dir(params.REPOSITORY) {
-          git credentialsId: 'preprod-sa', url: "https://gitlab.devops.adr.it/adr/cdm/business-continuity/web-application/${params.REPOSITORY}.git", branch: "${params.BRANCH}"
+          git credentialsId: 'accesso-prova-gitlab', url: "https://gitlab.com/Lorenzo-Pagliaricci/${params.REPOSITORY}.git", branch: "${params.BRANCH}"
         }
       }
     }

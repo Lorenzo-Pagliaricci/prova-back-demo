@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: adr-gitlab-repo-remote
   title: Repository GitLab (Remote)
-  description: Crea una repository GitLab usando il token configurato nel backend Backstage e registra la nuova entity nel Catalog.
+  description: Crea una repository GitLab Spring Boot Hello World usando il token configurato nel backend Backstage e registra la nuova entity nel Catalog.
   tags:
     - gitlab
     - repository
@@ -35,7 +35,7 @@ spec:
           title: Jenkins Git Credentials ID
           type: string
           description: Credentials ID presente in Jenkins per leggere la repository GitLab
-          default: preprod-sa
+          default: accesso-prova-gitlab
         jenkinsGitBranch:
           title: Git Branch
           type: string

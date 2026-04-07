@@ -3,6 +3,9 @@ kind: Component
 metadata:
   name: ${{ values.name }}
   description: Repository ${{ values.name }} created by Backstage
+  tags:
+    - java
+    - spring-boot
 spec:
   type: service
   lifecycle: experimental
