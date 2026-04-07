@@ -105,14 +105,14 @@ EOF
               sh """
                 chmod +x mvnw
                 ./mvnw -s .backstage-maven-settings.xml -B -DskipTests deploy \\
-                  -DaltDeploymentRepository=backstage-nexus::default:${params.NEXUS_REPOSITORY_URL}
+                  -DaltDeploymentRepository=backstage-nexus::${params.NEXUS_REPOSITORY_URL}
               """
             } else {
               def hasMaven = sh(script: 'command -v mvn >/dev/null 2>&1', returnStatus: true) == 0
               if (hasMaven) {
                 sh """
                   mvn -s .backstage-maven-settings.xml -B -DskipTests deploy \\
-                    -DaltDeploymentRepository=backstage-nexus::default:${params.NEXUS_REPOSITORY_URL}
+                    -DaltDeploymentRepository=backstage-nexus::${params.NEXUS_REPOSITORY_URL}
                 """
               } else {
                 echo 'pom.xml found but mvn is not available on this Jenkins agent, skipping Nexus publish.'

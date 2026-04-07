@@ -6,6 +6,9 @@ metadata:
   annotations:
     jenkins.io/job-full-name: ${{ values.jenkinsJobFullName }}
     gitlab.com/project-slug: ${{ values.gitlabProjectPath }}
+    # Needed so the Nexus entity-content tab is rendered in the new frontend.
+    # Keep empty to avoid adding docker filters to Nexus search queries.
+    nexus-repository-manager/docker.image-name: ""
     nexus-repository-manager/config.title: ${{ values.nexusRepositoryName }}
     nexus-repository-manager/repository: ${{ values.nexusRepositoryName }}
     nexus-repository-manager/format: maven2
