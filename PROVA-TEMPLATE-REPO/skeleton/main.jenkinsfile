@@ -1,0 +1,41 @@
+pipeline {
+
+  agent any
+
+  parameters {
+    string(name: 'REPOSITORY', defaultValue: 'cdm-meteo-service', description: 'The name of the repository (No need to change it)')
+    string(name: 'PARENT_REPOSITORY', defaultValue: 'cdm-starter-parent', description: 'The name of the parent repository (No need to change it)')
+    string(name: 'BRANCH', defaultValue: 'develop', description: 'The Branch of the repository Gitlab')
+    string(name: 'NOTIFICATION_RECEIVERS', defaultValue: 'adbm_support_indra@indra.es', description: 'People to send notifications to')
+    choice(name: 'REPOSITORY_TAG', choices: ['dev', 'prod'], description: 'Repository to deploy artifact')
+  }
+
+  stages {
+    stage('Build Source Code') {
+      steps {
+        build job: "/cdm_pipeline/cdm_meteo_service/cdm_meteo_service_pipeline/build",
+          parameters: [
+            [$class: 'StringParameterValue', name: 'REPOSITORY', value: "${env.REPOSITORY}"],
+            [$class: 'StringParameterValue', name: 'PARENT_REPOSITORY', value: "${env.PARENT_REPOSITORY}"],
+            [$class: 'StringParameterValue', name: 'BRANCH', value: "${env.BRANCH}"],
+            [$class: 'StringParameterValue', name: 'NOTIFICATION_RECEIVERS', value: "${env.NOTIFICATION_RECEIVERS}"],
+            [$class: 'StringParameterValue', name: 'REPOSITORY_TAG', value: "${env.REPOSITORY_TAG}"]
+          ]
+      }
+    }
+
+    stage('Deploy Source Code') {
+      when {
+        expression { params.REPOSITORY_TAG != 'prod' }
+      }
+      steps {
+        build job: "/cdm_pipeline/cdm_meteo_service/cdm_meteo_service_pipeline/deploy",
+          parameters: [
+            [$class: 'StringParameterValue', name: 'REPOSITORY', value: "${env.REPOSITORY}"],
+            [$class: 'StringParameterValue', name: 'BRANCH', value: "${env.BRANCH}"],
+            [$class: 'StringParameterValue', name: 'NOTIFICATION_RECEIVERS', value: "${env.NOTIFICATION_RECEIVERS}"]
+          ]
+      }
+    }
+  }
+}

@@ -1,0 +1,122 @@
+pipeline {
+
+  agent { label 'ubuntu-22' }
+
+  tools {
+    jdk 'jdk-11.11-redhat'
+  }
+
+  parameters {
+    string(name: 'REPOSITORY', defaultValue: 'cdm-meteo-service', description: 'The name of the repository (No need to change it)')
+    string(name: 'PARENT_REPOSITORY', defaultValue: 'cdm-starter-parent', description: 'The name of the parent repository (No need to change it)')
+    string(name: 'NOTIFICATION_RECEIVERS', defaultValue: 'adbm_support_indra@indra.es', description: "List of receivers' emails")
+    string(name: 'BRANCH', defaultValue: 'develop', description: "Branch to checkout")
+    choice(name: 'REPOSITORY_TAG', choices: ['dev', 'prod'], description: 'Repository to deploy artifact')
+  }
+
+  stages {
+    stage('clean_workspace') {
+      steps {
+        script {
+          deleteDir()
+        }
+      }
+    }
+
+    stage('Source Code Parent Checkout') {
+      when {
+        expression { return params.PARENT_REPOSITORY != '' }
+      }
+      steps {
+        dir(params.PARENT_REPOSITORY) {
+          git credentialsId: 'preprod-sa', url: "https://gitlab.devops.adr.it/adr/cdm/business-continuity/web-application/${params.PARENT_REPOSITORY}.git", branch: "${params.BRANCH}"
+        }
+      }
+    }
+
+    stage('Source Code Checkout') {
+      steps {
+        dir(params.REPOSITORY) {
+          git credentialsId: 'preprod-sa', url: "https://gitlab.devops.adr.it/adr/cdm/business-continuity/web-application/${params.REPOSITORY}.git", branch: "${params.BRANCH}"
+        }
+      }
+    }
+
+    stage('Build') {
+      steps {
+        withMaven(maven: 'maven-3.5.4', globalMavenSettingsConfig: 'cdm-global-maven-settings-cdm') {
+          sh """
+            cd ${params.REPOSITORY}
+            mvn clean install -Dv=${BUILD_NUMBER} -Dhttps.protocols=TLSv1.2 -DskipTests
+          """
+        }
+      }
+    }
+
+    stage('Archive in Nexus') {
+      steps {
+        withMaven(maven: 'maven-3.5.4', globalMavenSettingsConfig: 'cdm-global-maven-settings-cdm') {
+          script {
+            pom = readMavenPom file: "${params.REPOSITORY}/pom.xml"
+            groupId = "${pom.groupId}"
+            artifactId = "${pom.artifactId}"
+            version = "${pom.version}-SNAPSHOT"
+
+            def nexusUrl = params.REPOSITORY_TAG == 'prod'
+              ? 'https://nexus.devops.adr.it/repository/cdm-release/'
+              : 'https://nexus.devops.adr.it/repository/cdm-snapshot/'
+
+            def version = params.REPOSITORY_TAG == 'prod'
+              ? "${pom.version}"
+              : "${pom.version}-SNAPSHOT"
+
+            sh """
+            mvn deploy:deploy-file \
+              -DgroupId=${groupId} \
+              -DartifactId=${artifactId} \
+              -Dversion="${version}" \
+              -DgeneratePom=true \
+              -Dpackaging=jar \
+              -DrepositoryId=nexus_adr \
+              -Durl=${nexusUrl} \
+              -Dfile=${params.REPOSITORY}/target/${artifactId}-${pom.version}.jar
+            """
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      script {
+        if (params.NOTIFICATION_RECEIVERS?.trim()) {
+          mail bcc: '',
+          mimeType: 'text/html',
+          body: """
+              <p>SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+              <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>
+          """,
+          cc: '', from: '', replyTo: '', subject: "Pipeline ${env.JOB_NAME} [${env.BUILD_NUMBER}] succeded", to: "${params.NOTIFICATION_RECEIVERS}"
+        } else {
+          echo "No email recipients specified, skipping success notification"
+        }
+      }
+    }
+    failure {
+      script {
+        if (params.NOTIFICATION_RECEIVERS?.trim()) {
+          mail bcc: '',
+          mimeType: 'text/html',
+          body: """
+              <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+              <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>
+          """,
+          cc: '', from: '', replyTo: '', subject: "Pipeline ${env.JOB_NAME} [${env.BUILD_NUMBER}] has failed", to: "${params.NOTIFICATION_RECEIVERS}"
+        } else {
+          echo "No email recipients specified, skipping failure notification"
+        }
+      }
+    }
+  }
+}

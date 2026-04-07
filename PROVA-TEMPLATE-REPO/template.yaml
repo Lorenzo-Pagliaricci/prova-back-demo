@@ -23,6 +23,34 @@ spec:
           description: Nome repository (es. cdm-meteo-service)
           pattern: '^[a-z0-9-]+$'
           ui:autofocus: true
+    - title: Jenkins Pipeline
+      required:
+        - jenkinsGitCredentialsId
+      properties:
+        jenkinsJobFullName:
+          title: Jenkins Job Full Name
+          type: string
+          description: Nome job Jenkins (supporta folder con /, es. cdm_pipeline/my-service/main)
+        jenkinsGitCredentialsId:
+          title: Jenkins Git Credentials ID
+          type: string
+          description: Credentials ID presente in Jenkins per leggere la repository GitLab
+          default: preprod-sa
+        jenkinsGitBranch:
+          title: Git Branch
+          type: string
+          description: Branch usato dalla pipeline Jenkins
+          default: main
+        jenkinsfilePath:
+          title: Jenkinsfile Path
+          type: string
+          description: Percorso del Jenkinsfile nel repository creato
+          default: main.jenkinsfile
+        jenkinsInstance:
+          title: Jenkins Instance Name
+          type: string
+          description: Nome istanza da app-config jenkins.instances
+          default: default
 
   steps:
     - id: fetch-base
@@ -47,6 +75,19 @@ spec:
         defaultBranch: main
         repoVisibility: private
 
+    - id: create-jenkins-pipeline
+      name: Create Jenkins pipeline job
+      action: jenkins:create-pipeline
+      input:
+        repoUrl: ${{ steps['publish-gitlab'].output.remoteUrl }}
+        jenkinsJobFullName: ${{ parameters.jenkinsJobFullName | default(parameters.name) }}
+        gitBranch: ${{ parameters.jenkinsGitBranch | default('main') }}
+        jenkinsfilePath: ${{ parameters.jenkinsfilePath | default('main.jenkinsfile') }}
+        jenkinsGitCredentialsId: ${{ parameters.jenkinsGitCredentialsId }}
+        jenkinsInstance: ${{ parameters.jenkinsInstance | default('default') }}
+        overwrite: true
+        description: Pipeline created by Backstage for repository ${{ parameters.name }}
+
     - id: register-catalog
       name: Register in catalog
       action: catalog:register
@@ -60,5 +101,7 @@ spec:
         url: ${{ steps['publish-gitlab'].output.remoteUrl }}
       - title: Repository Contents
         url: ${{ steps['publish-gitlab'].output.repoContentsUrl }}
+      - title: Jenkins Pipeline Job
+        url: ${{ steps['create-jenkins-pipeline'].output.jobUrl }}
       - title: Open in Catalog
         entityRef: ${{ steps['register-catalog'].output.entityRef }}
