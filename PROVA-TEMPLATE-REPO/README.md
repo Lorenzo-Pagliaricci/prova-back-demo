@@ -45,7 +45,11 @@ Per Jenkins:
 - legge `jenkins.instances[].baseUrl`, `username`, `apiKey` da `app-config`
 - `apiKey` puo' essere `${JENKINS_API_TOKEN}` da `backstage-secret`
 - il nome job Jenkins e' automatico: `<nome-repository>-jenkinsJob`
-- in template devi valorizzare `jenkinsGitCredentialsId` (credential ID presente su Jenkins per clonare GitLab)
+- configurazione Jenkins nel template e' preimpostata (non visibile nel form utente):
+  - `jenkinsGitCredentialsId: accesso-prova-gitlab`
+  - `gitBranch: main`
+  - `jenkinsfilePath: main.jenkinsfile`
+  - `jenkinsInstance: default`
 
 Il template imposta automaticamente in `catalog-info.yaml`:
 

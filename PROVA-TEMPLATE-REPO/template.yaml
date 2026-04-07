@@ -23,30 +23,6 @@ spec:
           description: Nome repository (es. cdm-meteo-service)
           pattern: '^[a-z0-9-]+$'
           ui:autofocus: true
-    - title: Jenkins Pipeline
-      required:
-        - jenkinsGitCredentialsId
-      properties:
-        jenkinsGitCredentialsId:
-          title: Jenkins Git Credentials ID
-          type: string
-          description: Credentials ID presente in Jenkins per leggere la repository GitLab
-          default: accesso-prova-gitlab
-        jenkinsGitBranch:
-          title: Git Branch
-          type: string
-          description: Branch usato dalla pipeline Jenkins
-          default: main
-        jenkinsfilePath:
-          title: Jenkinsfile Path
-          type: string
-          description: Percorso del Jenkinsfile nel repository creato
-          default: main.jenkinsfile
-        jenkinsInstance:
-          title: Jenkins Instance Name
-          type: string
-          description: Nome istanza da app-config jenkins.instances
-          default: default
 
   steps:
     - id: fetch-base
@@ -78,10 +54,10 @@ spec:
       input:
         repoUrl: ${{ steps['publish-gitlab'].output.remoteUrl }}
         jenkinsJobFullName: ${{ parameters.name }}-jenkinsJob
-        gitBranch: ${{ parameters.jenkinsGitBranch | default('main') }}
-        jenkinsfilePath: ${{ parameters.jenkinsfilePath | default('main.jenkinsfile') }}
-        jenkinsGitCredentialsId: ${{ parameters.jenkinsGitCredentialsId }}
-        jenkinsInstance: ${{ parameters.jenkinsInstance | default('default') }}
+        gitBranch: main
+        jenkinsfilePath: main.jenkinsfile
+        jenkinsGitCredentialsId: accesso-prova-gitlab
+        jenkinsInstance: default
         overwrite: true
         description: Pipeline created by Backstage for repository ${{ parameters.name }}
 
