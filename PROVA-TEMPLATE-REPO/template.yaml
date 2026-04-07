@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: adr-gitlab-repo-remote
   title: Repository GitLab (Remote)
-  description: Crea una repository GitLab Spring Boot Hello World usando il token configurato nel backend Backstage e registra la nuova entity nel Catalog.
+  description: Crea repository GitLab Spring Boot, crea pipeline Jenkins (<repo>-jenkinsJob), crea repository Nexus (<repo>-nexusartifact), avvia la prima build e registra nel Catalog.
   tags:
     - gitlab
     - repository
@@ -25,6 +25,33 @@ spec:
           ui:autofocus: true
 
   steps:
+    - id: current-user
+      name: Resolve GitLab user from token
+      action: gitlab:user:info
+      input:
+        repoUrl: gitlab.com?owner=placeholder&repo=placeholder
+
+    - id: create-nexus-repository
+      name: Create Nexus maven hosted repository
+      action: nexus:create-maven-hosted-repository
+      input:
+        repositoryName: ${{ parameters.name }}-nexusartifact
+        versionPolicy: MIXED
+        layoutPolicy: STRICT
+        writePolicy: ALLOW
+        blobStoreName: default
+        strictContentTypeValidation: true
+        online: true
+
+    - id: ensure-jenkins-nexus-credentials
+      name: Ensure Jenkins credentials for Nexus upload
+      action: jenkins:ensure-username-password-credential
+      input:
+        credentialId: nexus-backstage
+        description: Nexus credential managed by Backstage scaffolder
+        jenkinsInstance: default
+        overwrite: true
+
     - id: fetch-base
       name: Generate repository files
       action: fetch:template
@@ -32,13 +59,13 @@ spec:
         url: ./skeleton
         values:
           name: ${{ parameters.name }}
+          gitlabOwner: ${{ steps['current-user'].output.username }}
+          gitlabProjectPath: ${{ steps['current-user'].output.username }}/${{ parameters.name }}
           jenkinsJobFullName: ${{ parameters.name }}-jenkinsJob
-
-    - id: current-user
-      name: Resolve GitLab user from token
-      action: gitlab:user:info
-      input:
-        repoUrl: gitlab.com?owner=placeholder&repo=placeholder
+          nexusRepositoryName: ${{ steps['create-nexus-repository'].output.repositoryName }}
+          nexusRepositoryUrl: ${{ steps['create-nexus-repository'].output.repositoryUrl }}
+          jenkinsNexusCredentialsId: ${{ steps['ensure-jenkins-nexus-credentials'].output.credentialId }}
+          mavenGroupId: com.example
 
     - id: publish-gitlab
       name: Create GitLab repository
@@ -59,6 +86,7 @@ spec:
         jenkinsGitCredentialsId: accesso-prova-gitlab
         jenkinsInstance: default
         overwrite: true
+        triggerBuild: true
         description: Pipeline created by Backstage for repository ${{ parameters.name }}
 
     - id: register-catalog
@@ -76,5 +104,9 @@ spec:
         url: ${{ steps['publish-gitlab'].output.repoContentsUrl }}
       - title: Jenkins Pipeline Job
         url: ${{ steps['create-jenkins-pipeline'].output.jobUrl }}
+      - title: Jenkins Queue Item
+        url: ${{ steps['create-jenkins-pipeline'].output.queueUrl }}
+      - title: Nexus Maven Repository
+        url: ${{ steps['create-nexus-repository'].output.repositoryUrl }}
       - title: Open in Catalog
         entityRef: ${{ steps['register-catalog'].output.entityRef }}

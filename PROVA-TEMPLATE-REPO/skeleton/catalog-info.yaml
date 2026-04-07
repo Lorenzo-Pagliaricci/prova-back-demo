@@ -5,6 +5,12 @@ metadata:
   description: Repository ${{ values.name }} created by Backstage
   annotations:
     jenkins.io/job-full-name: ${{ values.jenkinsJobFullName }}
+    gitlab.com/project-slug: ${{ values.gitlabProjectPath }}
+    nexus-repository-manager/config.title: ${{ values.nexusRepositoryName }}
+    nexus-repository-manager/repository: ${{ values.nexusRepositoryName }}
+    nexus-repository-manager/format: maven2
+    nexus-repository-manager/maven.group-id: ${{ values.mavenGroupId }}
+    nexus-repository-manager/maven.artifact-id: ${{ values.name }}
   tags:
     - java
     - spring-boot

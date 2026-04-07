@@ -10,10 +10,13 @@ pipeline {
     string(name: 'BRANCH', defaultValue: 'main', description: 'The branch of the repository on GitLab')
     string(name: 'NOTIFICATION_RECEIVERS', defaultValue: 'adbm_support_indra@indra.es', description: 'People to send notifications to')
     choice(name: 'REPOSITORY_TAG', choices: ['dev', 'prod'], description: 'Target environment')
+    string(name: 'NEXUS_REPOSITORY', defaultValue: '${{ values.nexusRepositoryName }}', description: 'Nexus repository name')
+    string(name: 'NEXUS_REPOSITORY_URL', defaultValue: '${{ values.nexusRepositoryUrl }}', description: 'Nexus repository URL')
+    string(name: 'NEXUS_CREDENTIALS_ID', defaultValue: '${{ values.jenkinsNexusCredentialsId }}', description: 'Jenkins credentialsId used for Nexus authentication')
   }
 
   environment {
-    GITLAB_BASE_URL = 'https://gitlab.com/Lorenzo-Pagliaricci'
+    GITLAB_BASE_URL = 'https://gitlab.com/${{ values.gitlabOwner }}'
     GIT_CREDENTIALS_ID = 'accesso-prova-gitlab'
   }
 
@@ -54,6 +57,69 @@ pipeline {
       }
       steps {
         echo "Deploy stage placeholder for repository ${params.REPOSITORY} on tag ${params.REPOSITORY_TAG}"
+      }
+    }
+
+    stage('Publish JAR to Nexus') {
+      steps {
+        script {
+          if (!params.NEXUS_REPOSITORY_URL?.trim()) {
+            error 'NEXUS_REPOSITORY_URL is empty'
+          }
+          if (!params.NEXUS_CREDENTIALS_ID?.trim()) {
+            error 'NEXUS_CREDENTIALS_ID is empty'
+          }
+
+          def hasMavenWrapper = fileExists('mvnw')
+          def hasPom = fileExists('pom.xml')
+
+          if (!hasMavenWrapper && !hasPom) {
+            echo 'No pom.xml found, skipping Nexus publish.'
+            return
+          }
+
+          withCredentials([
+            usernamePassword(
+              credentialsId: "${params.NEXUS_CREDENTIALS_ID}",
+              usernameVariable: 'NEXUS_USERNAME',
+              passwordVariable: 'NEXUS_PASSWORD',
+            ),
+          ]) {
+            sh '''
+              cat > .backstage-maven-settings.xml <<EOF
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+      <id>backstage-nexus</id>
+      <username>${NEXUS_USERNAME}</username>
+      <password>${NEXUS_PASSWORD}</password>
+    </server>
+  </servers>
+</settings>
+EOF
+            '''
+
+            if (hasMavenWrapper) {
+              sh """
+                chmod +x mvnw
+                ./mvnw -s .backstage-maven-settings.xml -B -DskipTests deploy \\
+                  -DaltDeploymentRepository=backstage-nexus::default:${params.NEXUS_REPOSITORY_URL}
+              """
+            } else {
+              def hasMaven = sh(script: 'command -v mvn >/dev/null 2>&1', returnStatus: true) == 0
+              if (hasMaven) {
+                sh """
+                  mvn -s .backstage-maven-settings.xml -B -DskipTests deploy \\
+                    -DaltDeploymentRepository=backstage-nexus::default:${params.NEXUS_REPOSITORY_URL}
+                """
+              } else {
+                echo 'pom.xml found but mvn is not available on this Jenkins agent, skipping Nexus publish.'
+              }
+            }
+          }
+        }
       }
     }
   }

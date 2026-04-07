@@ -6,7 +6,8 @@ Template remoto per Backstage che:
 2. risolve utente GitLab dal token (`gitlab:user:info`)
 3. crea la repo GitLab (`publish:gitlab`)
 4. crea/aggiorna la pipeline Jenkins (`jenkins:create-pipeline`)
-5. registra `catalog-info.yaml` nel Catalog (`catalog:register`)
+5. avvia automaticamente una build Jenkins della pipeline appena creata/aggiornata
+6. registra `catalog-info.yaml` nel Catalog (`catalog:register`)
 
 ## File principali
 
@@ -68,3 +69,4 @@ Le action custom backend non vanno modificate per questo caso, perche':
 - `fetch:template` copia i file nello workspace scaffolder
 - `publish:gitlab` fa commit/push sulla nuova repo
 - `jenkins:create-pipeline` crea o aggiorna solo il job Jenkins
+  - con `triggerBuild: true` avvia anche una build subito dopo il provisioning
