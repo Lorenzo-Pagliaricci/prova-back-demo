@@ -3,6 +3,8 @@ kind: Component
 metadata:
   name: ${{ values.name }}
   description: Repository ${{ values.name }} created by Backstage
+  annotations:
+    jenkins.io/job-full-name: ${{ values.jenkinsJobFullName }}
   tags:
     - java
     - spring-boot

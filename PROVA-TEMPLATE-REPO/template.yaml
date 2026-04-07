@@ -60,6 +60,7 @@ spec:
         url: ./skeleton
         values:
           name: ${{ parameters.name }}
+          jenkinsJobFullName: ${{ parameters.jenkinsJobFullName | default(parameters.name) }}
 
     - id: current-user
       name: Resolve GitLab user from token

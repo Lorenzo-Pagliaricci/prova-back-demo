@@ -46,6 +46,12 @@ Per Jenkins:
 - `apiKey` puo' essere `${JENKINS_API_TOKEN}` da `backstage-secret`
 - in template devi valorizzare `jenkinsGitCredentialsId` (credential ID presente su Jenkins per clonare GitLab)
 
+Il template imposta automaticamente in `catalog-info.yaml`:
+
+- `jenkins.io/job-full-name`
+
+cosi' la tab `CI/CD` di Backstage mostra i dati Jenkins del componente.
+
 Quindi il comportamento e' lo stesso del template locale in immagine, ma aggiornabile da repo senza rebuild dell'immagine.
 
 ## Nota tecnica: template vs action
