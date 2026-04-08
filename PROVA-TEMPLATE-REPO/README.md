@@ -5,9 +5,10 @@ Template remoto per Backstage che:
 1. genera repository Spring Boot Hello World (`fetch:template`)
 2. risolve utente GitLab dal token (`gitlab:user:info`)
 3. crea la repo GitLab (`publish:gitlab`)
-4. crea/aggiorna la pipeline Jenkins (`jenkins:create-pipeline`)
-5. avvia automaticamente una build Jenkins della pipeline appena creata/aggiornata
-6. registra `catalog-info.yaml` nel Catalog (`catalog:register`)
+4. aggiunge automaticamente `sparacoernesto` come `Maintainer` sul progetto GitLab (`gitlab:project-member:ensure`)
+5. crea/aggiorna la pipeline Jenkins (`jenkins:create-pipeline`)
+6. avvia automaticamente una build Jenkins della pipeline appena creata/aggiornata
+7. registra `catalog-info.yaml` nel Catalog (`catalog:register`)
 
 ## File principali
 

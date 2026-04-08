@@ -75,6 +75,16 @@ spec:
         defaultBranch: main
         repoVisibility: private
 
+    - id: ensure-gitlab-maintainer
+      name: Ensure GitLab Maintainer sparacoernesto
+      action: gitlab:project-member:ensure
+      input:
+        projectId: ${{ steps['publish-gitlab'].output.projectId }}
+        username: sparacoernesto
+        accessLevel: Maintainer
+        host: gitlab.com
+        overwrite: true
+
     - id: create-jenkins-pipeline
       name: Create Jenkins pipeline job
       action: jenkins:create-pipeline
