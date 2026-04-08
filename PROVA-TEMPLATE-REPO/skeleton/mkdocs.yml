@@ -1,0 +1,16 @@
+site_name: ${{ values.name }} service docs
+site_description: Technical documentation for service ${{ values.name }}
+docs_dir: docs
+
+nav:
+  - Overview: index.md
+  - Update Guide: update-guide.md
+  - Backstage Usage: backstage-usage.md
+
+plugins:
+  - techdocs-core
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true

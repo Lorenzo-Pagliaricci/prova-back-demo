@@ -9,6 +9,7 @@ Template remoto per Backstage che:
 5. crea/aggiorna la pipeline Jenkins (`jenkins:create-pipeline`)
 6. avvia automaticamente una build Jenkins della pipeline appena creata/aggiornata
 7. registra `catalog-info.yaml` nel Catalog (`catalog:register`)
+8. include documentazione TechDocs di esempio (`mkdocs.yml` + `docs/`)
 
 ## File principali
 

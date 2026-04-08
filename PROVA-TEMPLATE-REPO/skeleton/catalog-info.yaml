@@ -4,6 +4,8 @@ metadata:
   name: ${{ values.name }}
   description: Repository ${{ values.name }} created by Backstage
   annotations:
+    # Enable TechDocs for this component using docs versioned in this repository.
+    backstage.io/techdocs-ref: dir:.
     jenkins.io/job-full-name: ${{ values.jenkinsJobFullName }}
     gitlab.com/project-slug: ${{ values.gitlabProjectPath }}
     # Needed so the Nexus entity-content tab is rendered in the new frontend.
